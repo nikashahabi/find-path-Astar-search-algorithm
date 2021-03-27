@@ -192,12 +192,21 @@ class FibonacciHeap:
     # checks for a node in the heap with the given value
     def searchWithValue(self, value, currentNode):
         if currentNode is not None:
-            # if currentNode.value == value:
-            #     return True
+            # print(currentNode.value)
+            # print(currentNode.key)
+            if currentNode.value == value:
+                return currentNode
             siblings = [x for x in self.iterate(currentNode)]
             for i in range(0, len(siblings)):
-                # self.searchWithValue(value, siblings[i])
-                print(siblings[i].key)
+                # print(siblings[i].value)
+                # print(siblings[i].key)
+                if siblings[i].value == value:
+                    return siblings[i]
+                if self.searchWithValue(value, siblings[i].child) is not None:
+                    return self.searchWithValue(value, siblings[i].child)
+        return None
+
+
 
 
 
@@ -208,14 +217,14 @@ class FibonacciHeap:
 class Cell:
     'class for each cell.'
     def __init__(self):
-        parent = False
-        parenti = None
-        parentj = None
-        f = None
+        self.parent = False
+        self.parenti = None
+        self.parentj = None
+        self.f = None
         'f = g + h'
-        g = None
+        self.g = None
         'g is the cost function.'
-        h = None
+        self.h = None
         'h is the heuristic function and equals the Euclidean Distance to the goal.'
 
 
@@ -231,7 +240,7 @@ def isCellValid(r, c, row, col):
 
 def isCellBlocked(row, col, grid):
     'if a cell is blocked'
-    return grid[row][col] == 1
+    return grid[row][col] == 0
 
 
 def HValue(row, col, rowDes, colDes):
@@ -245,9 +254,16 @@ def tracePath(cells, rowDes, colDes):
     currentRow = rowDes
     currentCol = colDes
     while cells[currentRow][currentCol].parent is True:
+        print("in while")
+        print(currentRow, currentCol)
+        print(cells[currentRow][currentCol].parenti, cells[currentRow][currentCol].parentj,
+              cells[currentRow][currentCol].parent)
         stack.append((currentRow, currentCol))
+        tempRow = currentRow
         currentRow = cells[currentRow][currentCol].parenti
-        currentCol = cells[currentRow][currentCol].parentj
+        currentCol = cells[tempRow][currentCol].parentj
+        print("the next current row and col")
+        print(currentRow, currentCol)
     stack.append((currentRow, currentCol))
     print("The path to the destination:")
     while stack:
@@ -265,29 +281,36 @@ def calculateCost(pi, pj, i, j):
 
 def inserIntoFrontier(i, j, pi, pj, cells, grid, frontier, explored, rowDes, colDes):
     'checks if the cell is valid and not blocked and not in explored.'
-    if isCellValid(i, j, len(grid), len(grid[0])) and isCellBlocked(i, j, grid) is False and explored[i][j] == False:
+    if isCellValid(i, j, len(grid), len(grid[0])) and isCellBlocked(i, j, grid) is False and explored[i][j] is False:
+        print("checking for frontier")
+        print(i, j)
         gNew = cells[pi][pj].g + calculateCost(pi, pj, i, j)
         hNew = HValue(i, j, rowDes, colDes)
         fNew = gNew + hNew
         'if the accepted cell is not in frontier insert it in'
-        'if the accepted cell in in frontier with higher f insert it in'
+        'if the accepted cell in in frontier with higher f decrease its key'
         if not cells[i][j].parent:
+            print("the cell was not in frontier")
             cells[i][j].parenti = pi
             cells[i][j].parentj = pj
             cells[i][j].f = fNew
             cells[i][j].g = gNew
             cells[i][j].h = hNew
-            cells[i][j].parent == True
+            print(fNew,gNew,hNew)
+            cells[i][j].parent = True
             frontier.insert(cells[i][j].f, (i, j))
-        elif frontier.searchWithValue((i, j)) is not None:
+        elif frontier.searchWithValue((i, j), frontier.root_list) is not None:
+            print("the cell is in frontier")
             node = frontier.searchWithValue((i, j),frontier.root_list)
             if frontier.decrease_key(node, fNew) is not None:
+                print("the cell is in frontier with higher f")
+                print(fNew, gNew, hNew)
                 cells[i][j].parenti = pi
                 cells[i][j].parentj = pj
                 cells[i][j].f = fNew
                 cells[i][j].g = gNew
                 cells[i][j].h = hNew
-                cells[i][j].parent == True
+                cells[i][j].parent = True
 
 
 
@@ -297,10 +320,12 @@ def inserIntoFrontier(i, j, pi, pj, cells, grid, frontier, explored, rowDes, col
 
 def AStarSearch (grid, rowDes, colDes, rowStart, colStart):
     'performs the a star search algorithm. start to des'
-    if not isCellValid(rowDes, colDes, grid):
+    rows = len(grid)
+    columns = len(grid[0])
+    if not isCellValid(rowDes, colDes, rows, columns):
         print("Destination is not valid")
         return
-    if not isCellValid(rowStart, colStart, grid):
+    if not isCellValid(rowStart, colStart, rows, columns):
         print("Source is not valid")
         return
     if isCellBlocked(rowDes, colDes, grid):
@@ -309,25 +334,20 @@ def AStarSearch (grid, rowDes, colDes, rowStart, colStart):
     if isCellBlocked(rowStart, colStart, grid):
         print("Source is blocked")
         return
-    rows = len(grid)
-    columns = len(grid[0])
     'explored is the closed list. a binary hash'
     explored = [[False] * columns for i in range(rows)]
-    # print to see if explored has the same dimension as the grid
-    print(explored)
     'cells is used to store info of each cell in the grid'
     cells = [[Cell() for i in range(columns)] for j in range(rows)]
-    print(cells)
-    for i in range(int(rows)):
-        for j in range(columns):
-            print(cells[i][j].parent)
     cells[rowStart][colStart].f = 0
+    cells[rowStart][colStart].g = 0
     'frontier is the open list. a fibonacci heap'
     frontier = FibonacciHeap()
     frontier.insert(cells[rowStart][colStart].f, (rowStart, colStart))
     while frontier.total_nodes > 0:
         minNode = frontier.extract_min()
         r, c = minNode.value
+        print("extracted node")
+        print(r, c)
         'we have now explored the min node in the fibonacci heap'
         explored[r][c] = True
         'checks to see if minNode is the destination'
@@ -347,10 +367,24 @@ def AStarSearch (grid, rowDes, colDes, rowStart, colStart):
     print("No path was found to the destination")
 
 
-fibHeap = FibonacciHeap()
-fibHeap.insert(5)
-fibHeap.insert(10)
-fibHeap.insert(11)
-fibHeap.insert(3)
-fibHeap.insert(0)
-fibHeap.searchWithValue(10, fibHeap.root_list)
+# f = FibonacciHeap()
+# f.insert(10)
+# f.insert(11)
+# f.insert(3)
+# f.extract_min()
+# print(f.searchWithValue(10,f.root_list))
+
+grid = [ [ 1, 0, 1, 1, 1, 1, 0, 1, 1, 1 ],
+         [ 1, 1, 1, 0, 1, 1, 1, 0, 1, 1 ],
+         [ 1, 1, 1, 0, 1, 1, 0, 1, 0, 1 ],
+         [ 0, 0, 1, 0, 1, 0, 0, 0, 0, 1 ],
+         [ 1, 1, 1, 0, 1, 1, 1, 0, 1, 0 ],
+         [ 1, 0, 1, 1, 1, 1, 0, 1, 0, 0 ],
+         [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 1 ],
+         [ 1, 0, 1, 1, 1, 1, 0, 1, 1, 1 ],
+         [ 1, 1, 1, 0, 0, 0, 1, 0, 0, 1 ] ]
+grid2 = [[1, 0, 0],
+        [1, 1, 1],
+        [0, 0, 1]]
+AStarSearch(grid, 0, 0, 8, 0)
+
