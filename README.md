@@ -1,0 +1,3 @@
+# Finding an Optimal Path Using A* Heuristic Search
+
+Here, I have implemented A* Heuristic Search, in order to find an optimal path from a given source, to a given destination, in a given grid. The grid is a binary nested list. 0 is used for blocked cells and 1 is used for cells which we can move into. Given the grid, starting point cell and ending point destination, the algorithm will give one possible optimal path. The algorithm is both complete and optimal. (The heuristic function never overestimated the cost to the destination, it is in fact the length of the ... distance) The cost of each diagonal move is 1.414 (the approximation of sqrt(2)) and each horizontal or vertical move is 1.
